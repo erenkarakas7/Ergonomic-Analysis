@@ -4,10 +4,10 @@ import time
 import requests
 from reba_analyzer import RebaAnalyzer
 
-# FastAPI Sunucumuzun Adresi
+# FastApi sunucu adresi
 API_URL = "http://127.0.0.1:8001"
 
-
+# PoseDetector sınıfı
 class PoseDetector:
     def __init__(self, static_image_mode=False, model_complexity=1, smooth_landmarks=True,
                  min_detection_confidence=0.5, min_tracking_confidence=0.5):
@@ -39,7 +39,7 @@ class PoseDetector:
 
 
 def main(source=0):
-    # 1. API'ye Bağlan ve Oturum (Session) Başlat
+    # 1. API'ye Bağlan ve Session başlat
     try:
         print("API'ye bağlanılıyor...")
         response = requests.get(f"{API_URL}/init_demo/")
