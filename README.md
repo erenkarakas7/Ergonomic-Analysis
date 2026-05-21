@@ -271,5 +271,6 @@ For technical support or questions regarding REBA methodology:
 - FastAPI Documentation: https://fastapi.tiangolo.com/
 
 ## Authors and Acknowledgments
+* **Eren Karakaş** - *Lead Developer & System Architect* - [@erenkarakas7](https://github.com/erenkarakas7)
 
 ---
