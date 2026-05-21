@@ -92,7 +92,7 @@ def main(source=0):
             trunk_sc = analyzer.get_trunk_score(shoulder, hip)
             arm_sc = analyzer.get_upper_arm_score(shoulder, elbow)
 
-            # --- VERİTABANINA LOGLAMA MANTIĞI (FPS Düşmesini Engeller) ---
+            # Veritabanı loglama işlemmi(FPS düşmesini engeller...
             current_time = time.time()
             if current_time - last_log_time >= 1.0:  # Eğer 1 saniye geçtiyse
                 is_crit = 1 if reba_score >= 8 else 0  # 8 ve üzeri yüksek riskli sayılır
@@ -119,23 +119,5 @@ def main(source=0):
 
                 last_log_time = current_time  # Zamanlayıcıyı sıfırla
 
-            # --- EKRANA YAZDIRMA ---
-            h, w, c = frame.shape
-            cv2.rectangle(frame, (10, 10), (600, 100), (0, 0, 0), -1)
-            cv2.putText(frame, f'REBA SKORU: {reba_score}', (20, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 3)
-            cv2.putText(frame, risk_text, (20, 85),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, risk_color, 2)
-
-        cv2.imshow('Ergonomic Risk Assessment - Final Version', frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
 if __name__ == "__main__":
-    # Test videonun yolunu yaz
-    main("C:/Users/erenk/Desktop/Ergonomic-Analysis/exampleVideo8.mp4")
+    pass
