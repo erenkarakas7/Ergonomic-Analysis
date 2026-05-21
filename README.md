@@ -32,6 +32,8 @@ Traditional vision-based assessment tools suffer from performance degradation wh
  │  SQLite DB    │ ──(Stored locally on-premise)
  └───────────────┘
 
+
+```
 Core Engineering Features
 1. Hybrid Assessment (Human-in-the-Loop)
 Pure computer vision models cannot detect environmental variables like load weight or grasp quality. ErgonVisio blends spatial data with administrative inputs:
