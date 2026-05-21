@@ -262,9 +262,6 @@ Contributions are welcome. Please ensure:
 - Database schema changes are migration-compatible
 - Testing performed on edge cases
 
-## License
-
-This project is developed for occupational health and safety applications. Contact the development team for licensing information.
 
 ## Support and Documentation
 
@@ -274,7 +271,5 @@ For technical support or questions regarding REBA methodology:
 - FastAPI Documentation: https://fastapi.tiangolo.com/
 
 ## Authors and Acknowledgments
-
-Developed as a specialized ergonomic assessment solution for industrial workplace monitoring and occupational safety compliance.
 
 ---
