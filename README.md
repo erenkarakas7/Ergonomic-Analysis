@@ -1,4 +1,4 @@
-# ErgonVisio - Industrial Ergonomic Risk Assessment System
+# ErgonVisio - Ergonomic Risk Assessment System
 
 A comprehensive real-time ergonomic risk assessment platform utilizing computer vision and REBA (Rapid Entire Body Assessment) analysis to monitor workplace posture and identify occupational health hazards in industrial environments.
 
@@ -254,14 +254,6 @@ API_URL = "http://127.0.0.1:8001"    # API server address
 - Web-based dashboard for remote monitoring
 - REST API rate limiting and authentication
 
-## Contributing
-
-Contributions are welcome. Please ensure:
-- Code follows PEP 8 style guidelines
-- New features include updated documentation
-- Database schema changes are migration-compatible
-- Testing performed on edge cases
-
 
 ## Support and Documentation
 
@@ -271,6 +263,6 @@ For technical support or questions regarding REBA methodology:
 - FastAPI Documentation: https://fastapi.tiangolo.com/
 
 ## Authors and Acknowledgments
-* **Eren Karakaş** - *Lead Developer & System Architect* - [@erenkarakas7](https://github.com/erenkarakas7)
+* **Eren Karakaş** - *Developer & System Architect* - [@erenkarakas7](https://github.com/erenkarakas7)
 
 ---
