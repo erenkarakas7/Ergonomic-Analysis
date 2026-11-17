@@ -1,268 +1,128 @@
-# ErgonVisio - Ergonomic Risk Assessment System
+# ErgonVisio
 
-A comprehensive real-time ergonomic risk assessment platform utilizing computer vision and REBA (Rapid Entire Body Assessment) analysis to monitor workplace posture and identify occupational health hazards in industrial environments.
+A desktop application that detects a worker's posture from a camera or video file and calculates an ergonomic risk score using the REBA method. Scores are shown live, logged to a database once per second, and can be reviewed later per workstation or per worker with charts.
 
-## Overview
+I built this with an occupational health and safety (OHS) scenario in mind, but it is not a substitute for an expert assessment. The calculation is a simplified adaptation of REBA (see "Limitations" below).
 
-ErgonVisio is an integrated solution designed for occupational safety and health (OSH) professionals to assess and monitor ergonomic risks in real-time. The system uses pose detection technology to analyze worker posture and applies the standardized REBA methodology to generate quantitative risk scores, enabling data-driven interventions to prevent musculoskeletal disorders.
+The interface is in Turkish.
 
-**Key Capabilities:**
-- Real-time pose detection and tracking
-- Automated REBA score calculation
-- Multi-workstation monitoring
-- Historical data analytics and trend analysis
-- Worker performance profiles and risk stratification
-- Intuitive dashboard with visual risk indicators
+## How it works
 
-## Architecture
+1. MediaPipe Pose finds body landmarks in each frame.
+2. Angles are calculated from the ear, shoulder, elbow, wrist, hip and index finger points (`reba_analyzer.py`).
+3. The angles are converted into neck, trunk, upper arm, lower arm and wrist scores, then combined using the standard REBA Tables A, B and C.
+4. The load, coupling, activity and leg values selected by the user at the start of a session are added to the score.
+5. The final score is shown live and written to SQLite through FastAPI once per second.
 
-### System Components
+Video processing runs in a separate `QThread` so the interface does not freeze. Log requests are sent from another thread.
 
-```
-ErgonVisio/
-├── app_gui.py              # Desktop application interface (PyQt5)
-├── main_api.py             # RESTful API backend (FastAPI)
-├── vision_module.py        # Computer vision processing layer
-├── reba_analyzer.py        # REBA scoring engine
-└── data/
-    └── ergovision_V4.db    # SQLite database
-```
+## Files
 
-### Technology Stack
+| File | Purpose |
+|---|---|
+| `app_gui.py` | PyQt5 interface: menus, analysis screen, record management, reporting |
+| `main_api.py` | FastAPI service and SQLAlchemy models |
+| `vision_module.py` | MediaPipe Pose wrapper (`PoseDetector`) |
+| `reba_analyzer.py` | Angle calculation and REBA tables |
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | PyQt5 | Cross-platform GUI with real-time visualization |
-| **Backend** | FastAPI | High-performance REST API with async support |
-| **Computer Vision** | MediaPipe, OpenCV | Pose detection and landmark tracking |
-| **Database** | SQLite + SQLAlchemy | Persistent data storage and ORM |
-| **Analysis** | NumPy, Matplotlib | Statistical analysis and visualization |
+Note: the `main()` function in `vision_module.py` is left over from an earlier test flow and is not used by the application.
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.8 or higher
-- Webcam or video file for input
-- 2+ GB RAM recommended
-- Windows/macOS/Linux compatible
-
-### Setup Instructions
-
-1. **Clone and navigate to project directory:**
-   ```bash
-   cd ergovision
-   ```
-
-2. **Create virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install fastapi uvicorn sqlalchemy opencv-python mediapipe pyqt5 matplotlib numpy requests
-   ```
-
-4. **Database initialization** (automatic on first run):
-   ```bash
-   mkdir -p data
-   ```
-
-## Usage
-
-### Starting the System
-
-**Step 1: Launch the API server**
 ```bash
-python main_api.py  # or use: uvicorn main_api:app --host 127.0.0.1 --port 8001 --reload
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install fastapi uvicorn sqlalchemy opencv-python mediapipe PyQt5 matplotlib numpy requests
 ```
 
-**Step 2: Launch the desktop application**
+Python version I tested with: `3.11`
+
+## Running
+
+Two separate terminals are needed.
+
 ```bash
+# 1. API
+uvicorn main_api:app --port 8001
+
+# 2. Interface
 python app_gui.py
 ```
 
-### Workflow
+The API address is hardcoded as `API_URL` (`http://127.0.0.1:8001`) at the top of `app_gui.py` and `vision_module.py`. If you change the port, update it there.
 
-#### 1. System Setup
-- Open **PERSONNEL MANAGEMENT** to register workers and workstations
-- Configure REBA parameters (load, coupling, activity scores) if required
+The database (`ergovision_V4.db`) is created automatically on first run. Its location is set by `BASE_DIR` in `main_api.py`; at the moment a `data/` folder is created one directory above the project folder.
 
-#### 2. Start Analysis Session
-- Click **ANALYSIS** from main menu
-- Select video source (webcam or local file)
-- Choose worker name and workstation location
-- Adjust REBA weighting parameters as needed
-- Click **START ANALYSIS**
+## Usage
 
-#### 3. Real-time Monitoring
-- Live pose detection with skeletal overlay
-- Real-time REBA score with color-coded risk levels
-- Dynamic body model showing risk status per body segment
-- Continuous data logging to database at 1-second intervals
+1. In the **Database Management** menu, add workers and workstations (new names typed when starting a session are also created automatically).
+2. In the **Analysis** menu, choose the operator, workstation, start time and physical conditions:
+   - Load: 0 / 1 / 2 points
+   - Coupling: 0 / 1 / 2 points
+   - Leg posture: 1 / 2 points
+   - Activity: 1 (static/repetitive) or 0 (dynamic)
+3. Choose a camera or an `.mp4` / `.avi` file as the source and press **Start**.
+4. During analysis, the REBA score, risk level, neck/trunk/arm/leg scores and a color-coded body diagram update live. Pause and resume are available.
+5. When the video ends, a summary is shown: total time, critical time and risk ratio. If critical frames exceed 30%, a "risk threshold exceeded" warning is shown.
+6. In the **Reporting** menu, review averages for all workstations or the sessions of a selected worker as charts and tables.
 
-#### 4. Review Results
-- Access **REPORTING** menu after analysis
-- View facility-wide statistics and trends
-- Analyze individual worker performance profiles
-- Export session data for further investigation
+## Risk levels
 
-## API Endpoints
+| REBA score | Level |
+|---|---|
+| 1 | Negligible |
+| 2-3 | Low |
+| 4-7 | Medium |
+| 8-10 | High |
+| 11+ | Very high |
 
-### Worker Management
-```
-POST   /workers/              - Register new worker
-GET    /workers/              - List all workers
-DELETE /workers/{worker_id}   - Remove worker record
-```
+A record is flagged as `is_critical` when the score is 8 or above.
 
-### Workstation Management
-```
-POST   /workstations/         - Add new workstation/location
-GET    /workstations/         - List all workstations
-DELETE /workstations/{ws_id}  - Remove workstation
-```
+## API
 
-### Session Control
-```
-POST   /create_session/       - Initialize analysis session
-GET    /worker_sessions/{name} - Retrieve worker's session history
-```
+All parameters are currently sent as query strings.
 
-### Data Logging
-```
-POST   /log_risk/             - Record frame-level REBA assessment
-GET    /reports/all/          - Retrieve recent logs (300 limit)
-GET    /stats/session/{id}    - Session-specific statistics
-GET    /stats/stations/       - Facility-level aggregated statistics
-```
+| Method | Path | Description |
+|---|---|---|
+| POST | `/workers/` | Add a worker |
+| GET | `/workers/` | List workers |
+| DELETE | `/workers/{worker_id}` | Delete a worker |
+| POST | `/workstations/` | Add a workstation |
+| GET | `/workstations/` | List workstations |
+| DELETE | `/workstations/{ws_id}` | Delete a workstation |
+| POST | `/create_session/` | Start a session, returns `session_id` |
+| POST | `/log_risk/` | Write one risk record |
+| GET | `/reports/all/` | Latest 300 records |
+| GET | `/stats/stations/` | Averages per workstation |
+| GET | `/worker_sessions/{worker_name}` | Sessions of a worker |
+| GET | `/stats/session/{session_id}` | Records of one session |
 
-## REBA Scoring System
+While FastAPI is running, automatic documentation is available at `http://127.0.0.1:8001/docs`.
 
-### Overview
-REBA (Rapid Entire Body Assessment) is a validated ergonomic assessment method that evaluates postural risk using a systematic scoring matrix. The system calculates scores based on:
+## Database
 
-- **Trunk posture** (flexion, extension, lateral bending)
-- **Neck posture** (flexion, extension, rotation)
-- **Leg position** (foot placement, weight distribution)
-- **Upper arm position** (abduction, elevation)
-- **Lower arm position** (deviation from midline)
-- **Wrist posture** (deviation, rotation)
+SQLite with SQLAlchemy. Four tables: `workers`, `workstations`, `sessions`, `risk_logs`. A worker and a workstation can each have many sessions, and a session can have many risk records. Deleting a worker or workstation also deletes the sessions and records that belong to it.
 
-### Risk Classification
-| REBA Score | Risk Level | Action Required |
-|-----------|-----------|-----------------|
-| 1 | Negligible | No action necessary |
-| 2-3 | Low | Routine monitoring |
-| 4-7 | Medium | Intervention may be required |
-| 8-10 | High | Immediate intervention needed |
-| 11+ | Very High | Emergency intervention |
+## Limitations
 
-The system automatically assigns color indicators:
-- **Green** (#00C853): Acceptable posture
-- **Orange** (#FF9800): Moderate risk
-- **Red** (#D32F2F): High-risk situation
+- REBA is applied in a simplified form: neck is scored 1-2, trunk 1-4 and upper arm 1-4. Some additional adjustments from standard REBA (side bending, twisting, arm abduction, etc.) are not included.
+- The leg score is not calculated from the image; the user selects it manually at the start of a session.
+- Only landmarks on the left side of the body are used, so the camera angle should suit that.
+- Angles are calculated from 2D coordinates of a single camera, so results are sensitive to camera angle. They are not measurement-device accuracy.
+- One session and one camera at a time.
+- I have not measured FPS or latency.
+- There is no authentication; the API is intended for local use only.
 
-## Data Logging and Database Schema
+## To do
 
-### RiskLog Table Structure
-```
-RiskLog:
-  - id: Unique identifier
-  - session_id: Reference to analysis session
-  - timestamp: Assessment timestamp
-  - location_name: Workstation identifier
-  - neck_score: Neck posture component (1-3)
-  - trunk_score: Trunk posture component (1-5)
-  - arm_score: Upper arm component (1-6)
-  - leg_score: Leg component (1-4)
-  - final_reba_score: Composite REBA score (1-15)
-  - risk_level: Categorical risk assessment
-  - is_critical: Flag for high-risk events (score ≥8)
-```
+- Move parameters into Pydantic models and the request body
+- Show errors to the user instead of silently ignoring them
+- Package with Docker
+- Export session data (CSV)
+- Two-sided (left/right) analysis
 
-Data is logged once per second during active analysis to balance temporal resolution with system performance.
+## Author
 
-## Configuration
+Eren Karakaş, [@erenkarakas7](https://github.com/erenkarakas7)
 
-### REBA Parameters
-Modifiable weighting factors in the setup interface:
-
-- **Load Score** (0-3): Material handling weight and frequency adjustment
-- **Coupling Score** (0-2): Grip quality and hand coupling classification  
-- **Activity Score** (0-1): Repetitive or dynamic movement factor
-- **Leg Score** (1-4): Base leg stability component
-
-### System Parameters
-Edit in `app_gui.py`:
-```python
-API_URL = "http://127.0.0.1:8001"    # API server address
-```
-
-## Performance Specifications
-
-- **Pose Detection**: ~30 FPS on standard hardware
-- **REBA Calculation**: <10 ms per frame
-- **Database Queries**: Optimized with indexing on session_id
-- **Concurrent Users**: Single-instance; enterprise scaling via load balancing
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: "API connection refused"
-- Solution: Ensure FastAPI server is running on port 8001
-  ```bash
-  python -m uvicorn main_api:app --port 8001
-  ```
-
-**Issue**: Pose detection not working
-- Solution: Check webcam permissions and camera connectivity
-- Verify MediaPipe installation: `python -c "import mediapipe; print(mediapipe.__version__)"`
-
-**Issue**: Database locked error
-- Solution: Close all instances of the application and delete `.db-journal` file in `data/` folder
-
-**Issue**: Low FPS performance
-- Solution: Reduce model complexity in `vision_module.py`:
-  ```python
-  model_complexity=0  # 0=lite, 1=full
-  ```
-
-## Data Privacy and Compliance
-
-- All data stored locally in SQLite database
-- No cloud transmission by default
-- GDPR-compliant with worker data retention policies
-- Database encryption recommended for sensitive environments
-
-## Limitations and Future Enhancements
-
-### Current Limitations
-- Single camera input per session
-- Requires frontal or semi-frontal pose visibility
-- Database performance limits ~100K+ records
-- No multi-user concurrent analysis
-
-### Planned Features
-- Multi-camera support with trajectory tracking
-- Machine learning-based anomaly detection
-- Predictive risk alerts and intervention recommendations
-- Integration with IoT sensors (pressure, temperature)
-- Web-based dashboard for remote monitoring
-- REST API rate limiting and authentication
-
-
-## Support and Documentation
-
-For technical support or questions regarding REBA methodology:
-- REBA Assessment Guide: Standard occupational health documentation
-- MediaPipe Pose: https://developers.google.com/mediapipe/solutions/vision/pose_landmarker
-- FastAPI Documentation: https://fastapi.tiangolo.com/
-
-## Authors and Acknowledgments
-* **Eren Karakaş** - *Developer & System Architect* - [@erenkarakas7](https://github.com/erenkarakas7)
-
----
+REBA method: Hignett, S. & McAtamney, L. (2000). *Rapid Entire Body Assessment (REBA)*. Applied Ergonomics, 31(2), 201-205.
